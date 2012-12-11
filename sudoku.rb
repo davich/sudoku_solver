@@ -1,28 +1,32 @@
 require 'pp'
 class Sudoku
   class << self
-    def sudoku(grid)
-      anything = [1,2,3,4,5,6,7,8,9]
-      grid.each { |line| line.each_with_index { |square, i| line[i] = anything.dup if square == 0 }}
+    def solve(grid)
+      populate_empty_cells_with_array(grid)
       calc_sudoku grid
+    end
+
+    def populate_empty_cells_with_array(grid)
+      grid.each do |line| 
+        line.each_with_index do |square, i| 
+          line[i] = (1..9).to_a if square == 0
+        end
+      end
     end
 
     def calc_sudoku(grid)
       begin
         grid_changed = false
-        for i in 0..8
-          for j in 0..8
-            if grid[i][j].is_a?(Array)
-              col = grid.collect { |row| row[j] if row[j].is_a?(Fixnum) }.compact
-              row = grid[i].select { |square| square.is_a?(Fixnum) }.compact
-              square = square_nums(grid, i, j)
-        
-              cross_over = grid[i][j] & (col+row+square)
-              grid_changed ||= !cross_over.empty?
-              grid[i][j] = grid[i][j].reject { |item| cross_over.include? item }
-              grid[i][j] = grid[i][j][0] if grid[i][j].size == 1
-              return nil if grid[i][j].size == 0
+        for_each_cell do |i, j|
+          if grid[i][j].is_a?(Array)
+            cross_over = grid[i][j] & collect_adjacent_numbers(grid, i, j)
+            grid_changed ||= !cross_over.empty?
+            grid[i][j] = grid[i][j].reject { |item| cross_over.include? item }
+
+            if grid[i][j].size == 1
+              grid[i][j] = grid[i][j][0]
             end
+            return nil if grid[i][j].size == 0
           end
         end
       end while grid_changed
@@ -32,6 +36,21 @@ class Sudoku
       end
   
       grid && complete?(grid) ? grid : nil
+    end
+
+    def collect_adjacent_numbers(grid, i, j)
+      col = grid.collect { |row| row[j] if row[j].is_a?(Fixnum) }.compact
+      row = grid[i].select { |square| square.is_a?(Fixnum) }.compact
+      square = square_nums(grid, i, j)
+      (col + row + square)
+    end
+
+    def for_each_cell
+      for i in 0..8
+        for j in 0..8
+          yield i, j
+        end
+      end
     end
 
     def take_a_guess(grid)
@@ -72,7 +91,7 @@ class Sudoku
   end
 end
 
-pp Sudoku.sudoku([
+pp Sudoku.solve([
 [4,0,0,0,2,7,0,0,0],
 [0,0,0,0,0,0,0,0,0],
 [8,6,0,9,0,4,1,0,0],
@@ -83,7 +102,7 @@ pp Sudoku.sudoku([
 [0,0,0,0,0,0,0,0,0],
 [0,0,0,5,6,0,0,0,3]])
 
-pp Sudoku.sudoku([
+pp Sudoku.solve([
 [8,0,0,0,0,0,0,0,0],
 [0,0,3,6,0,0,0,0,0],
 [0,7,0,0,9,0,2,0,0],
@@ -94,7 +113,7 @@ pp Sudoku.sudoku([
 [0,0,8,5,0,0,0,1,0],
 [0,9,0,0,0,0,4,0,0]])
 
-pp Sudoku.sudoku([
+pp Sudoku.solve([
 [1,0,0,0,0,7,0,9,0],
 [0,3,0,0,2,0,0,0,8],
 [0,0,9,6,0,0,5,0,0],
