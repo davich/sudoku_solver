@@ -9,22 +9,14 @@ class Sudoku
     end
   end
 private
+  class ImpossibleToSolveException < RuntimeError
+  end
   class << self
     def calc_sudoku(grid)
       begin
-        grid_changed = false
-        for_each_cell do |i, j|
-          if grid[i][j].is_a?(Array)
-            cross_over = grid[i][j] & grid.collect_adjacent_numbers(i, j)
-            grid_changed ||= !cross_over.empty?
-            grid[i][j] = grid[i][j].reject { |item| cross_over.include? item }
-
-            if grid[i][j].size == 1
-              grid[i][j] = grid[i][j][0]
-            end
-            return nil if grid[i][j].size == 0
-          end
-        end
+        grid_changed = eliminate_numbers(grid)
+      rescue ImpossibleToSolveException
+        return nil
       end while grid_changed
 
       unless grid.complete?
@@ -32,6 +24,21 @@ private
       end
   
       grid && grid.complete? ? grid : nil
+    end
+
+    def eliminate_numbers(grid)
+      grid_changed = false
+      for_each_cell do |i, j|
+        next unless grid[i][j].is_a?(Array)
+        cross_over = grid[i][j] & grid.collect_adjacent_numbers(i, j)
+        grid_changed ||= !cross_over.empty?
+        grid[i][j] = grid[i][j].reject { |item| cross_over.include? item }
+
+          
+        grid[i][j] = grid[i][j][0] if grid[i][j].size == 1
+        raise ImpossibleToSolveException.new if grid[i][j].size == 0
+      end
+      grid_changed
     end
 
     def for_each_cell
