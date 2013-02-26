@@ -1,4 +1,3 @@
-require 'pp'
 class Sudoku
   class << self
     def solve(grid_data)
